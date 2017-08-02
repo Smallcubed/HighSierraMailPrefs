@@ -28,9 +28,12 @@ The general structure is
 }
 
 
-The layout work will call out to the viewController of the selected item for specifics
+The layout work will call out to specific plugins' viewControllers 
+   just before it is deselected
+   after it has been selected (after layout work done)
+   
+These are optional methods to be implemented in the plugin's subclass of NSViewController.
 	
-
 */
 @interface NSViewController (MailPlugin)
 	// declaration so that compiler will not scream at you about selector not found.
