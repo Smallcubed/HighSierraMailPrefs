@@ -18,7 +18,6 @@
 @property (strong) SierraPreferencesController * preferenceController;
 @end
 
-__attribute__((annotate("returns_localized_nsstring"))) static inline NSString *_fakeLocalizedString(NSString *s){return s;} 
 
 @implementation PluginPreferencesViewController
 
@@ -26,6 +25,9 @@ __attribute__((annotate("returns_localized_nsstring"))) static inline NSString *
 //- Cooperative code start  -- do not edit this code unless you want to ruin it for everyone. ;)
 +(void)load{
     // register this class with NSApp
+    [self registerPluginPreferences];
+}
++(void)registerPluginPreferences{
     void* key = sel_registerName("pluginPreferenceViewControllerClasses");
     NSMutableArray * muClasses = [objc_getAssociatedObject(NSApp, key) mutableCopy]?:[NSMutableArray new];;
     [muClasses addObject:self];
