@@ -36,8 +36,8 @@ The layout work will call out to the viewController of the selected item for spe
 	// declaration so that compiler will not scream at you about selector not found.
 	// plugins should implement this method if they need to do any specific updates internal
 	// to their preference view controller
--(void)	wasSelectedByPreferencesTabViewController:(MailTabViewController*) controller;
--(void)	willBeDeselectedByPreferencesTabViewController:(MailTabViewController*) controller;
+-(void)	wasSelectedByMailTabViewController:(MailTabViewController*) controller;
+-(void)	willBeDeselectedByMailTabViewController:(MailTabViewController*) controller;
 
 @end
 @implementation MailTabViewController
@@ -56,8 +56,8 @@ The layout work will call out to the viewController of the selected item for spe
 	
 	if (idx < self.tabViewItems.count){
 		NSTabViewItem * oldTabItem = self.tabViewItems[idx];
-		if ([oldTabItem.viewController respondsToSelector:@selector(willBeDeselectedByPreferencesTabViewController:)]){
-	  		[oldTabItem.viewController willBeDeselectedByPreferencesTabViewController:self];
+		if ([oldTabItem.viewController respondsToSelector:@selector(willBeDeselectedByMailTabViewController:)]){
+	  		[oldTabItem.viewController willBeDeselectedByMailTabViewController:self];
 		}
 	}
 		    
@@ -110,8 +110,8 @@ The layout work will call out to the viewController of the selected item for spe
 	widthConstraint.constant =  preferredSize.width;
 	
 	// let the newly selected plugin know it was just selected
-	if ([newTabItem.viewController respondsToSelector:@selector(wasSelectedByPreferencesTabViewController:)]){
-	  	[newTabItem.viewController wasSelectedByPreferencesTabViewController:self];
+	if ([newTabItem.viewController respondsToSelector:@selector(wasSelectedByMailTabViewController:)]){
+	  	[newTabItem.viewController wasSelectedByMailTabViewController:self];
 	}
 	
 	// we are done here, release the exclusionLock     
