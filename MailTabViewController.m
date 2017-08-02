@@ -45,10 +45,31 @@ These are optional methods to be implemented in the plugin's subclass of NSViewC
 @end
 @implementation MailTabViewController
 	
--(void)MTsetSelectedTabViewItemIndex:(NSUInteger)idx{
+/* Code notes
+
+   PLUGIN_PREFIX refers to the naming scheme of your plugin's swizzling mechanism
+   
+   for example, in MailTags the method is named -MTsetSelectedTabViewItemIndex:
+   		in Mail Act-On it is named: -MAOsetSelectedTabViewItemIndex:
+		
+   The actual name of the method depends on how you swizzle from the provider class into the target class.
+   Same goes for how you call down the swizzle chain
+
+   swizzledSelf indicates that you are calling down the swizzle chain 
+   ie . calling the swizzled out/original implementation of the method)
+   
+   in my code base, swizzled self is a cast of self to the original (swizzled) class.
+   #define swizzledSelf ((MailTabViewController*)self)
+   
+   // but you may do this differently -- diferrent strokes for different folks.
+   
+   
+*/
+	
+-(void)PLUGIN_PREFIXsetSelectedTabViewItemIndex:(NSUInteger)idx{
 
 	if ([[NSThread currentThread] threadDictionary][@"pluginExclusionLock"]){
-	  	[swizzledSelf MTsetSelectedTabViewItemIndex:idx];
+	  	[swizzledSelf PLUGIN_PREFIXsetSelectedTabViewItemIndex:idx];
 	  	return;
 	}
 	
@@ -65,7 +86,7 @@ These are optional methods to be implemented in the plugin's subclass of NSViewC
 	}
 		    
 	// call down the swizzle chain 
-	[swizzledSelf MTsetSelectedTabViewItemIndex:idx];
+	[swizzledSelf PLUGIN_PREFIXsetSelectedTabViewItemIndex:idx];
 	
 	// magic begins here.
 		    
