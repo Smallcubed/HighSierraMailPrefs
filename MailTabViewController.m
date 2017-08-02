@@ -39,8 +39,8 @@ These are optional methods to be implemented in the plugin's subclass of NSViewC
 	// declaration so that compiler will not scream at you about selector not found.
 	// plugins should implement this method if they need to do any specific updates internal
 	// to their preference view controller
--(void)	wasSelectedByMailTabViewController:(MailTabViewController*) controller;
--(void)	willBeDeselectedByMailTabViewController:(MailTabViewController*) controller;
+-(void)	mailTabViewController:(MailTabViewController*) controller willSelectTabViewItem:(NSTabViewItem*)tabItem;
+-(void)	mailTabViewController:(MailTabViewController*) controller didSelectTabViewItem:(NSTabViewItem*)tabItem;
 
 @end
 @implementation MailTabViewController
@@ -67,79 +67,71 @@ These are optional methods to be implemented in the plugin's subclass of NSViewC
 */
 	
 -(void)PLUGIN_PREFIXsetSelectedTabViewItemIndex:(NSUInteger)idx{
+    // check to see if we should change the layout
+    
+    if (self.tabView.subviews.count==0  // first call will not have any views loaded -- so don't do layout work.
+        || [self isKindOfClass:CLS(MailTabViewController)]==NO  // depending on swizzle technique, we may have swizzled NSTabViewController not MailTabViewController
+        || [[NSThread currentThread] threadDictionary][@"pluginExclusionLock"]){ //some other plugin is doing the layout work
+        [swizzledSelf PLUGIN_PREFIXsetSelectedTabViewItemIndex:idx];
+        return;
+    }
+   
+    
+    // grab the pluginExclusionLock
+    [[NSThread currentThread] threadDictionary][@"pluginExclusionLock"] = @YES;
+    
+    // let the currently selected preference know it will soon not be the currently selected preference
+     NSTabViewItem * newTabItem = self.tabViewItems[idx];
+   
+    if (idx < self.tabViewItems.count){
+        NSTabViewItem * oldTabItem = self.tabViewItems[idx];
+        if ([oldTabItem.viewController respondsToSelector:@selector(mailTabViewController:willSelectTabViewItem:)]){
+            [oldTabItem.viewController mailTabViewController:self willSelectTabViewItem:newTabItem];
+        }
+    }
+    
+    NSWindow * prefWindow = [self.tabView window];
 
-	if ([[NSThread currentThread] threadDictionary][@"pluginExclusionLock"]){
-	  	[swizzledSelf PLUGIN_PREFIXsetSelectedTabViewItemIndex:idx];
-	  	return;
-	}
-	
-	// grab the pluginExclusionLock
-	[[NSThread currentThread] threadDictionary][@"pluginExclusionLock"] = @YES;
-	
-	// let the currently selected preference know it will soon not be the currently selected preference
-	
-	if (idx < self.tabViewItems.count){
-		NSTabViewItem * oldTabItem = self.tabViewItems[idx];
-		if ([oldTabItem.viewController respondsToSelector:@selector(willBeDeselectedByMailTabViewController:)]){
-	  		[oldTabItem.viewController willBeDeselectedByMailTabViewController:self];
-		}
-	}
-		    
-	// call down the swizzle chain 
-	[swizzledSelf PLUGIN_PREFIXsetSelectedTabViewItemIndex:idx];
-	
-	// magic begins here.
-		    
-	NSTabViewItem * newTabItem = self.tabViewItems[idx];
-	
-	// ask the current item its preferred size.   By default NSViewController returns {0,0}
-	// each plugin should override this in their view controller subclass to provide a size.
-	    
-	NSSize preferredSize = [newTabItem.viewController preferredContentSize];
+    // figure out the mininum width of the window to accommodate all the plugins' tab icons.
+    CGFloat toolbarWidth = 0.0f;
+    for (NSView * aView in  [[[[prefWindow.toolbar valueForKey:@"_toolbarView"] subviews] firstObject] subviews]){
+        toolbarWidth += aView.frame.size.width + 2.0; // 2.0 padding between each view.
+    }
+    
+    
+    // get the maximum of the plugins view width and the toolbar width;
+    // note that we have to get the view width BEFORE calling down the swizzle chain as adding the view to the window will change its width
 
-	NSWindow * prefWindow = [self.tabView window];
-	// figure out the mininum width of the window to accommodate all the plugins' tab icons.
-	CGFloat toolbarWidth = 0.0f;
-	for (NSView * aView in  [[[[prefWindow.toolbar valueForKey:@"_toolbarView"] subviews] firstObject] subviews]){
-	  	toolbarWidth += aView.frame.size.width + 2.0; // 2.0 padding between each view.
-	}
-	
-	// select the maximum of the plugins preferred width and the toolbar width;
-	    
-	preferredSize.width = MAX(preferredSize.width,toolbarWidth);
-
-	if ( preferredSize.height>0 ){
-        	// currently the tabview doesn't have a height constraint.
-	 	 NSRect frame = [prefWindow frame];
-	 	 CGFloat height = preferredSize.height+78.0; // 78 for the height the tabs
-	  	frame.origin.y = NSMaxY(frame)-height;
-	  	frame.size.height = height;
-	  	[prefWindow setFrame:frame display:NO];
-	}
-
-	// find and set width constraint on tabView;
-	NSLayoutConstraint * widthConstraint = nil;
-	for (NSLayoutConstraint *constraint in [self.tabView constraints]){
-	  	if (constraint.firstAttribute == NSLayoutAttributeWidth && constraint.relation == NSLayoutRelationEqual && constraint.secondItem==nil){
-			widthConstraint = constraint;
-	  	}
-	}
-	if (!widthConstraint) {
-		// no width constraint  -- lets add one.
-		widthConstraint = [self.tabView.widthAnchor constraintEqualToConstant:preferredSize.width];
-	}
-	
-	// make sure the constraint is active and has the size we want.
-	widthConstraint.active = YES;
-	widthConstraint.constant =  preferredSize.width;
-	
-	// let the newly selected plugin know it was just selected
-	if ([newTabItem.viewController respondsToSelector:@selector(wasSelectedByMailTabViewController:)]){
-	  	[newTabItem.viewController wasSelectedByMailTabViewController:self];
-	}
-	
-	// we are done here, release the exclusionLock     
-	[[NSThread currentThread] threadDictionary][@"pluginExclusionLock"] = nil;
+    CGFloat newViewWidth = MAX(toolbarWidth,NSWidth(newTabItem.viewController.view.frame));
+    
+    // call down the swizzle chain
+    
+    [swizzledSelf PLUGIN_PREFIXsetSelectedTabViewItemIndex:idx];
+    
+    // find and set width constraint on tabView;
+    NSLayoutConstraint * widthConstraint = nil;
+    for (NSLayoutConstraint *constraint in [self.tabView constraints]){
+        if (constraint.firstAttribute == NSLayoutAttributeWidth && constraint.relation == NSLayoutRelationEqual && constraint.secondItem==nil){
+            widthConstraint = constraint;
+            break;
+        }
+    }
+    if (!widthConstraint) {
+        // no width constraint  -- lets add one.
+        widthConstraint = [self.tabView.widthAnchor constraintEqualToConstant:newViewWidth];
+    }
+    
+    // make sure the constraint is active and has the size we want.
+    widthConstraint.active = YES;
+    widthConstraint.constant =  newViewWidth;
+    
+    // let the newly selected plugin know it was just selected
+    if ([newTabItem.viewController respondsToSelector:@selector(mailTabViewController:didSelectTabViewItem:)]){
+        [newTabItem.viewController mailTabViewController:self didSelectTabViewItem:newTabItem];
+    }
+    
+    // we are done here, release the exclusionLock
+    [[NSThread currentThread] threadDictionary][@"pluginExclusionLock"] = nil;
 }
 
 @end
