@@ -111,14 +111,14 @@ These are optional methods to be implemented in the plugin's subclass of NSViewC
 	if ( preferredSize.height>0 ){
         	// currently the tabview doesn't have a height constraint.
 	 	 NSRect frame = [prefWindow frame];
-	 	 CGFloat height = preferredSize.height+TabItemHeight; // 78 for the height the tabs
+	 	 CGFloat height = preferredSize.height+78.0; // 78 for the height the tabs
 	  	frame.origin.y = NSMaxY(frame)-height;
 	  	frame.size.height = height;
 	  	[prefWindow setFrame:frame display:NO];
 	}
 
 	// find and set width constraint on tabView;
-
+	NSLayoutConstraint * widthConstraint = nil;
 	for (NSLayoutConstraint *constraint in [self.tabView constraints]){
 	  	if (constraint.firstAttribute == NSLayoutAttributeWidth && constraint.relation == NSLayoutRelationEqual && constraint.secondItem==nil){
 			widthConstraint = constraint;
