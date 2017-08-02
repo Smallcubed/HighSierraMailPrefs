@@ -1,0 +1,73 @@
+// * this is a swizzle of -[Mailapp setPreferencesController:] method in Mail on 10.13
+
+// last updated for build 17A315i
+
+// the code will check a plugin_lock so that other plugins don't run the same code
+
+// if it can grab the lock it will Instantiate ALL plugins view controllers registered with MailApp
+// See the PluginPreferenceViewController Example
+
+if the preference controller is being set to nil, 
+it will send a "SaveChanges" method to all plugin view controllers
+
+
+
+
+-(void)PLUGIN_PREFIXsetPreferencesController:(NSWindowController*)prefController{
+    // check the plugin lock
+    if ([[NSThread currentThread] threadDictionary][@"setPreferencesController_PluginLock"]){
+        [swizzledSelf PLUGIN_PREFIXsetPreferencesController:prefController];
+    }
+    else{
+        // grab the pluginlock
+        [[NSThread currentThread] threadDictionary][@"setPreferencesController_PluginLock"] = @YES;
+        
+        if (prefController){
+            
+            // turn off the constraint the right aligns the font pickers in the fonts preferences because it looks ugly in wider windows.
+            // this may change in future updates of Mail!
+            NSArray <NSTabViewItem*> * items  = [(NSTabViewController*)[prefController contentViewController] tabViewItems];
+            for (NSTabViewItem * item in items){
+                if ( [item.identifier isEqualToString:@"fontspref"] ){
+                    NSView * containerView = [[[[[item.viewController view] subviews] firstObject] subviews] firstObject];
+                    for (NSLayoutConstraint * constraint in containerView.constraints){
+                        if (constraint.firstItem ==containerView && [constraint.secondItem isKindOfClass:@class(FontPreferenceContainerView) ]  && constraint.firstAttribute==NSLayoutAttributeTrailing && constraint.constant == 16){
+                            [constraint setActive:NO];
+                        }
+                    }
+                }
+            }
+            
+            // each of the plugin classes should be registered in a mutable set 
+            // instantiate each of the plugin preferenceViewController Classes and send them an initializeFromDefaults message
+            
+            void* classesKey = sel_registerName("pluginPreferenceViewControllerClasses");
+            NSArray * pluginPrefClasses = [objc_getAssociatedObject(NSApp, classesKey) copy];
+            
+            [pluginPrefClasses enumerateObjectsUsingBlock:^(Class PrefClass, NSUInteger idx, BOOL * _Nonnull stop) {
+                __kindof NSViewController * prefViewController = [PrefClass preferencesViewControllerForWindowController:prefController];
+                if ([prefViewController respondsToSelector:@selector(initializeFromDefaults)]){
+                    [prefViewController initializeFromDefaults];
+                }
+            }];
+            
+        }
+        else{
+            // the windowController is likely being deallocate and closed
+            // send each of the plugin view controllers a  saveChanges message
+            
+            NSWindowController * currentWindowController = [self preferencesController];
+            NSTabViewController *tabViewcontroller = (NSTabViewController *)[currentWindowController contentViewController];
+            for(NSTabViewItem *tabViewItem in [tabViewcontroller tabViewItems]) {
+                if ([tabViewItem.viewController respondsToSelector:@selector(saveChanges)]){
+                    [(__kindof NSViewController*)(tabViewItem.viewController) saveChanges];
+                }
+            }
+        }
+        // call down the swizzle chain
+        [swizzledSelf PLUGIN_PREFIXsetPreferencesController:prefController];
+        
+        // release the plugin lock
+        [[NSThread currentThread] threadDictionary][@"setPreferencesController_PluginLock"] = nil;
+    }
+}
