@@ -31,18 +31,11 @@ The general structure is
 The layout work will call out to specific plugins' viewControllers 
    just before it is deselected
    after it has been selected (after layout work done)
-   
-These are optional methods to be implemented in the plugin's subclass of NSViewController.
-	
+ 
 */
-@interface NSViewController (MailPlugin)
-	// declaration so that compiler will not scream at you about selector not found.
-	// plugins should implement this method if they need to do any specific updates internal
-	// to their preference view controller
--(void)	mailTabViewController:(MailTabViewController*) controller willSelectTabViewItem:(NSTabViewItem*)tabItem;
--(void)	mailTabViewController:(MailTabViewController*) controller didSelectTabViewItem:(NSTabViewItem*)tabItem;
 
-@end
+#import "PluginPreferencesViewController.h" // necessary for calls to plugins
+
 @implementation MailTabViewController
 	
 /* Code notes
