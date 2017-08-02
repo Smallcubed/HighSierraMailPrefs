@@ -11,7 +11,7 @@ if the preference controller is being set to nil,
 it will send a "SaveChanges" method to all plugin view controllers
 
 
-
+#import "PluginPreferencesViewController.h"
 
 -(void)PLUGIN_PREFIXsetPreferencesController:(NSWindowController*)prefController{
     // check the plugin lock
@@ -26,7 +26,9 @@ it will send a "SaveChanges" method to all plugin view controllers
             
             // turn off the constraint the right aligns the font pickers in the fonts preferences because it looks ugly in wider windows.
             // this may change in future updates of Mail!
-            NSArray <NSTabViewItem*> * items  = [(NSTabViewController*)[prefController contentViewController] tabViewItems];
+            NSTabViewController * tabViewController = (NSTabViewController*)[prefController contentViewController];
+            
+            NSArray <NSTabViewItem*> * items  = [tabViewController tabViewItems];
             for (NSTabViewItem * item in items){
                 if ( [item.identifier isEqualToString:@"fontspref"] ){
                     NSView * containerView = [[[[[item.viewController view] subviews] firstObject] subviews] firstObject];
@@ -38,23 +40,45 @@ it will send a "SaveChanges" method to all plugin view controllers
                 }
             }
             
-            // each of the plugin classes should be registered in a mutable set 
+            // each of the plugin classes should be registered in a mutable set
             // instantiate each of the plugin preferenceViewController Classes and send them an initializeFromDefaults message
             
             void* classesKey = sel_registerName("pluginPreferenceViewControllerClasses");
             NSArray * pluginPrefClasses = [objc_getAssociatedObject(NSApp, classesKey) copy];
             
-            [pluginPrefClasses enumerateObjectsUsingBlock:^(Class PrefClass, NSUInteger idx, BOOL * _Nonnull stop) {
-                __kindof NSViewController * prefViewController = [PrefClass preferencesViewControllerForWindowController:prefController];
-                if ([prefViewController respondsToSelector:@selector(initializeFromDefaults)]){
-                    [prefViewController initializeFromDefaults];
+            NSArray <NSString*> * currentInstalledIdentifiers = [items valueForKey:@"identifier"];
+            
+            [pluginPrefClasses enumerateObjectsUsingBlock:^(id PrefClass, NSUInteger idx, BOOL * _Nonnull stop) {
+                if (![PrefClass respondsToSelector:@selector(preferencesIdentifier)]){
+                    return;
+                }
+                NSString * identifier = [PrefClass preferencesIdentifier];
+                if (![currentInstalledIdentifiers containsObject:identifier]){
+                    NSViewController <PluginPreferencesViewController> * controller = [PrefClass new];
+                    NSTabViewItem * tabViewItem = [[NSTabViewItem alloc] initWithIdentifier: identifier];
+                    tabViewItem.view = [controller view];
+                    tabViewItem.viewController = controller;
+                    [tabViewController addTabViewItem:tabViewItem];
+                    // once it added, we can get the toolbar item and set the label and image
+                    for (NSToolbarItem * toolbarItem in [prefController.window.toolbar items]){
+                        if ([toolbarItem.itemIdentifier isEqualToString: identifier]){
+                            toolbarItem.label = [controller tabBarLabel];
+                            toolbarItem.image = [controller tabBarImage];
+                            break;
+                        }
+                    }
+                    // send the new controller an initialize from defaults ( if it responds to it.)
+                    
+                    if ([controller respondsToSelector:@selector(initializeFromDefaults)]){
+                        [controller initializeFromDefaults];
+                    }
                 }
             }];
             
         }
         else{
             // the windowController is likely being deallocate and closed
-            // send each of the plugin view controllers a  saveChanges message
+            // send each of the plugin view controllers a  saveChanges message ( if it responds to it.)
             
             NSWindowController * currentWindowController = [self preferencesController];
             NSTabViewController *tabViewcontroller = (NSTabViewController *)[currentWindowController contentViewController];
