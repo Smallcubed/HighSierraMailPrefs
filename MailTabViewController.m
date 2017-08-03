@@ -97,10 +97,15 @@ The layout work will call out to specific plugins' viewControllers
     }
     
     
+    //  Get the best content size for the view
+    CGFloat viewWidth = NSWidth(newTabItem.viewController.view.frame);
+    NSSize contentSize = newTabItem.viewController.preferredContentSize;
+    if (!CGSizeEqualToSize(contentSize, NSZeroSize)) {
+        viewWidth = contentSize.width;
+    }
     // get the maximum of the plugins view width and the toolbar width;
     // note that we have to get the view width BEFORE calling down the swizzle chain as adding the view to the window will change its width
-
-    CGFloat newViewWidth = MAX(toolbarWidth,NSWidth(newTabItem.viewController.view.frame));
+    CGFloat newViewWidth = MAX(toolbarWidth, viewWidth);
     
     // call down the swizzle chain
     
