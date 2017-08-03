@@ -1,6 +1,6 @@
 # HighSierraMailPrefs
-code snippets for Mail plugins to use to coordinate working with plugin preferences
 
+Submodule for Mail plugins to use to coordinate working with plugin preferences
 
 In High Sierra, Apple has changed the way it deals with preferences, migrating from a "NSPreference Module" approach to a NSWindowController with NSTabViews
 
@@ -32,10 +32,13 @@ Both swizzles are meant to be dropped into your plugins without modifications (e
 1. Clone the HSMailPrefs repository as a submodule to your current working copy
 2. Add the subfolder "HSMailPrefs" to your project.  (This is the folder that contains HSMailPreSwizzle.h file)
 3. Make sure that all the following implementation files are added to your target:
+
         * `HSMailPrefSwizzle.m`
         * `MailApp_HSMailPrefs.m`
         * `MailTabViewController_HSMailPrefs.m`
+        
         ( Note that these need ARC to Build so set add compiler flag -fojbc-arc  if your project isn't ARC)
+        
 4. Add a preprocessor macro to your build settings
             `PLUGIN_ID=XXX` where XXX is your usual plugin id  (eg MT for MailTags, MAO for MailPerspectives)
 
