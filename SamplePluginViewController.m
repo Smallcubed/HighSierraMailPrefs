@@ -1,7 +1,7 @@
 //
 //  PluginPreferencesViewController.m
 
-#import "PluginPreferencesViewController.h"
+#import "SamplePreferencesViewController.h"
 #import "SierraPreferencesController.h"
 #import "MailApp_HSMailPrefs.h"
 
@@ -13,14 +13,14 @@
 #error This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
 #endif
 
-@interface PluginPreferencesViewController ()
+@interface SamplePreferencesViewController ()
 // not necessary but we have a ivar for a old style (pre 10.13) preference controller 
 // so we can provide compatibility
 @property (strong) SierraPreferencesController * preferenceController;
 @end
 
 
-@implementation PluginPreferencesViewController
+@implementation SamplePreferencesViewController
 
 //-----------------------------------------------------------------------------------------------
 //- Cooperative code start  -- do not edit this code unless you want to ruin it for everyone. ;)
