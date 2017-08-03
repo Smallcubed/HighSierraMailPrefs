@@ -47,7 +47,7 @@ static NSComparisonResult compareVersions(NSOperatingSystemVersion ver1 ,NSOpera
     NSAssert(mailMethod,@"Could not find target method -[%@ %@]",NSStringFromClass(mailClass),NSStringFromSelector(selector));
     
     Method pluginMethod = class_getInstanceMethod(self, selector); // look in myClass for method.
-    NSAssert(mailMethod,@"Could not find provider method -[%@ %@]",NSStringFromClass(self),NSStringFromSelector(selector));
+    NSAssert(pluginMethod,@"Could not find provider method -[%@ %@]",NSStringFromClass(self),NSStringFromSelector(selector));
     
     // the plugin selector is a concat of PLUGIN_ID and the selector   eg:  MTsetSelectedTabViewItemIndex:
     SEL pluginSelector = NSSelectorFromString([NSString stringWithFormat:@"%s%@",PLUGIN_STRINGIFY(PLUGIN_ID), NSStringFromSelector(selector)]);

@@ -12,32 +12,30 @@
      it will send a "SaveChanges" method to all plugin view controllers
 */
 
-#import "HSMailPrefSwizzle.h"
+#import "MailApp_HSMailPrefs.h"
 #import "PluginPreferencesViewController.h"
 
-@interface MailApp :NSApplication
--(NSWindowController*)preferencesController;
--(void)setPreferencesController:(NSWindowController*)controller;
--(void)PLUGIN_PREFIXED(setPreferencesController):(NSWindowController*)controller;
-@end
 
-@interface PLUGIN_POSTFIXED(MailApp_HSMailPrefs) : PLUGIN_POSTFIXED(Swizzle)
-@end
 
-#define selfClass ((Class) self)
-#define self ((MailApp*)self)
-
-@implementation PLUGIN_POSTFIXED(MailApp_HSMailPrefs)
+@implementation MailApp_HSMailPrefs
 +(void)load{
     // check the osVersion and swizzle
-    __unused BOOL result = [selfClass swizzleInstanceMethod:@selector(setPreferencesController:)
-                                                    toClass:@class(MailApp)
-                                               minOSVersion:(NSOperatingSystemVersion){10,13,0}
-                                               maxOSVersion:(NSOperatingSystemVersion){10,13,99}];
+    
+    __unused BOOL result = [self swizzleInstanceMethod:@selector(setPreferencesController:)
+                                               toClass:@class(MailApp)
+                                          minOSVersion:(NSOperatingSystemVersion){10,13,0}
+                                          maxOSVersion:(NSOperatingSystemVersion){10,13,99}];
     
 }
+#define self ((MailApp*)self)
 
-
++(void)registerPluginPreferenceViewControllerClass:(Class)class{
+    NSAssert([NSThread isMainThread],@"needs to be called on the main thread");
+    void* key = sel_registerName("pluginPreferenceViewControllerClasses");
+    NSMutableArray * muClasses = [objc_getAssociatedObject(NSApp, key) mutableCopy]?:[NSMutableArray new];;
+    [muClasses addObject:class];
+    objc_setAssociatedObject(NSApp, key, muClasses, OBJC_ASSOCIATION_RETAIN);
+}
 -(void)setPreferencesController:(NSWindowController*)prefController{
     // check the plugin lock
     if ([[NSThread currentThread] threadDictionary][@"setPreferencesController_PluginLock"]){

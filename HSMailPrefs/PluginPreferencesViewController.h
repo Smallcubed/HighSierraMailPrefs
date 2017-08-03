@@ -14,8 +14,6 @@
 @property (readonly) NSImage* tabBarImage;
 @property (readonly) NSString* tabBarLabel;
 
-+(void)registerPluginPreferences;
-
 @optional
 
 // optional delegate methods for when a newPreferencesController is set on MailApp

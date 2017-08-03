@@ -3,7 +3,8 @@
 
 #import "PluginPreferencesViewController.h"
 #import "SierraPreferencesController.h"
-#import <objc/runtime.h>
+#import "MailApp_HSMailPrefs.h"
+
 
 /* preferences for MacOS 10.13
  */
@@ -25,14 +26,10 @@
 //- Cooperative code start  -- do not edit this code unless you want to ruin it for everyone. ;)
 +(void)load{
     // register this class with NSApp
-    [self registerPluginPreferences];
+    [MailApp_HSMailPrefs registerPluginPreferenceViewControllerClass:self];
+
 }
-+(void)registerPluginPreferences{
-    void* key = sel_registerName("pluginPreferenceViewControllerClasses");
-    NSMutableArray * muClasses = [objc_getAssociatedObject(NSApp, key) mutableCopy]?:[NSMutableArray new];;
-    [muClasses addObject:self];
-    objc_setAssociatedObject(NSApp, key, muClasses, OBJC_ASSOCIATION_RETAIN);
-}
+
 
 // Cooperative Code end.
 //-----------------------------------------------------------------------------------------------
