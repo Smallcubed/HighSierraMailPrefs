@@ -1,6 +1,11 @@
 #import <objc/runtime.h>
 #import "HSMailPrefSwizzle.h"
 
+
+#if ! __has_feature(objc_arc)
+#error This file must be compiled with ARC. Use -fobjc-arc flag (or convert project to ARC).
+#endif
+
 static NSComparisonResult compareVersions(NSOperatingSystemVersion ver1 ,NSOperatingSystemVersion ver2){
     if (ver1.majorVersion < ver2.majorVersion){
         return NSOrderedAscending;
@@ -23,6 +28,7 @@ static NSComparisonResult compareVersions(NSOperatingSystemVersion ver1 ,NSOpera
     return NSOrderedSame;
     
 }
+
 @implementation PLUGIN_POSTFIXED(Swizzle)
 
 
