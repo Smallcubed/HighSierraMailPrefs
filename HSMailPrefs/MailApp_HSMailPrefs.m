@@ -7,16 +7,42 @@
 // if it can grab the lock it will Instantiate ALL plugins view controllers registered with MailApp
 // See the PluginPreferenceViewController Example
 
-if the preference controller is being set to nil, 
-it will send a "SaveChanges" method to all plugin view controllers
+/*
+     if the preference controller is being set to nil,
+     it will send a "SaveChanges" method to all plugin view controllers
+*/
 
-
+#import "HSMailPrefSwizzle.h"
+#import <objc/runtime.h>
 #import "PluginPreferencesViewController.h"
 
--(void)PLUGIN_PREFIXsetPreferencesController:(NSWindowController*)prefController{
+@interface MailApp :NSApplication
+-(NSWindowController*)preferencesController;
+-(void)setPreferencesController:(NSWindowController*)controller;
+-(void)PLUGIN_PREFIXED(setPreferencesController):(NSWindowController*)controller;
+@end
+
+@interface PLUGIN_POSTFIXED(MailApp_HSMailPrefs) : PLUGIN_POSTFIXED(Swizzle)
+@end
+
+#define selfClass ((Class) self)
+#define self ((MailApp*)self)
+
+@implementation PLUGIN_POSTFIXED(MailApp_HSMailPrefs)
++(void)load{
+    // check the osVersion and swizzle
+    __unused BOOL result = [selfClass swizzleInstanceMethod:@selector(setPreferencesController:)
+                                                    toClass:@class(MailApp)
+                                               minOSVersion:(NSOperatingSystemVersion){10,13,0}
+                                               maxOSVersion:(NSOperatingSystemVersion){10,13,99}];
+    
+}
+
+
+-(void)setPreferencesController:(NSWindowController*)prefController{
     // check the plugin lock
     if ([[NSThread currentThread] threadDictionary][@"setPreferencesController_PluginLock"]){
-        [swizzledSelf PLUGIN_PREFIXsetPreferencesController:prefController];
+        [self PLUGIN_PREFIXED(setPreferencesController): prefController];
     }
     else{
         // grab the pluginlock
@@ -89,9 +115,11 @@ it will send a "SaveChanges" method to all plugin view controllers
             }
         }
         // call down the swizzle chain
-        [swizzledSelf PLUGIN_PREFIXsetPreferencesController:prefController];
+        [self PLUGIN_PREFIXED(setPreferencesController):prefController];
         
         // release the plugin lock
         [[NSThread currentThread] threadDictionary][@"setPreferencesController_PluginLock"] = nil;
     }
 }
+@end
+

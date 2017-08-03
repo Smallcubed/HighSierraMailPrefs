@@ -1,73 +1,48 @@
+//
+//  MailTabViewController_PLUGIN.m swizzle
+#import "HSMailPrefSwizzle.h"
+#import "PluginPreferencesViewController.h"
 
-/* 
-Swizzled method in MailTabViewController.
+// useful macros
+// lets see you do this in swift!  ;P
 
-This method takes care of doing the layout of the MailTabView to accommodate different sizes for different plugin views.
+@interface MailTabViewController : NSTabViewController
+-(void)PLUGIN_PREFIXED(setSelectedTabViewItemIndex):(NSInteger)idx;
+@end
 
-All plugins need to coordinate on this to prevent weirdness in the size of the plugin window and prevent one plugin
-from fouling things up for other plugins.
 
-about the "PluginExclusionLock"
-As the changes here only need to be performed once regardless of the number of plugins installed,
-we use a object stored on the thread dictionary to ensure only the first plugin makes the changes.
+@interface PLUGIN_POSTFIXED(MailTabViewController_HSMailPrefs) : PLUGIN_POSTFIXED(Swizzle)
+@end
 
-The first plugin (which will be indeterminate) encountered will set a value on the thread dictionary and
-then perform the work.
+@implementation PLUGIN_POSTFIXED(MailTabViewController_HSMailPrefs)
 
-All subsequent plugins will check for the flag and if present, simply pass the control down the swizzle chain.
-
-The general structure is
--(void) SwizzleSetSelectedTabViewItemIndex:(NSUInteger)idx{
-	if ThreadDictionary flag present
-	    call swizzled method 
-	else
-	    set ThreadDictionary flag
-	    call swizzled method
-	    do layout work  // magic happens here
-	    remove threadDictionary flag
++(void)load{
+    // check the osVersion and swizzle
+    [self swizzleInstanceMethod:@selector(setSelectedTabViewItemIndex:)
+                        toClass:@class(MailTabViewController)
+                   minOSVersion:(NSOperatingSystemVersion){10,13,0}
+                   maxOSVersion:(NSOperatingSystemVersion){10,13,99}];
 }
+#define self ((MailTabViewController*)self)
+
+// swizzle method will add a selector using the pluginPrefix to the target Mail class
+// eg if the selector is -setSelectedTabViewItemIndex: and the PLUGIN_ID is MT,
+//       then method MTsetSelectedTabViewItemIndex: is added to the target class
+//    once added, the swizzle with exchange implementation pointers with the current mail Method
 
 
-The layout work will call out to specific plugins' viewControllers 
-   just before it is deselected
-   after it has been selected (after layout work done)
- 
-*/
 
-#import "PluginPreferencesViewController.h" // necessary for calls to plugins
-
-@implementation MailTabViewController
-	
-/* Code notes
-
-   PLUGIN_PREFIX refers to the naming scheme of your plugin's swizzling mechanism
-   
-   for example, in MailTags the method is named -MTsetSelectedTabViewItemIndex:
-   		in Mail Act-On it is named: -MAOsetSelectedTabViewItemIndex:
-		
-   The actual name of the method depends on how you swizzle from the provider class into the target class.
-   Same goes for how you call down the swizzle chain
-
-   swizzledSelf indicates that you are calling down the swizzle chain 
-   ie . calling the swizzled out/original implementation of the method)
-   
-   in my code base, swizzled self is a cast of self to the original (swizzled) class.
-   #define swizzledSelf ((MailTabViewController*)self)
-   
-   // but you may do this differently -- diferrent strokes for different folks.
-   
-   
-*/
-	
--(void)PLUGIN_PREFIXsetSelectedTabViewItemIndex:(NSUInteger)idx{
+// Swizzled methods
+// we use the plugin prefix macro to
+-(void)setSelectedTabViewItemIndex:(NSInteger)idx{
     // check to see if we should change the layout
     
     if (self.tabView.subviews.count==0  // first call will not have any views loaded -- so don't do layout work.
-        || [self isKindOfClass:CLS(MailTabViewController)]==NO  // depending on swizzle technique, we may have swizzled NSTabViewController not MailTabViewController
+        || [self isKindOfClass:objc_getClass("MailTabViewController")]==NO  // depending on swizzle technique, we may have swizzled NSTabViewController not MailTabViewController
         || [[NSThread currentThread] threadDictionary][@"pluginExclusionLock"] //some other plugin is doing the layout work
         || idx == self.selectedTabViewItemIndex // I am not changing tabs here nothing to do.
         ){
-        [swizzledSelf PLUGIN_PREFIXsetSelectedTabViewItemIndex:idx];
+        [self PLUGIN_PREFIXED(setSelectedTabViewItemIndex):idx]; // call down the swizzle chain
         return;
     }
     
@@ -83,13 +58,13 @@ The layout work will call out to specific plugins' viewControllers
         if (currentIndex <self.tabViewItems.count){
             NSTabViewItem * oldTabItem = self.tabViewItems[currentIndex];
             if ([oldTabItem.viewController respondsToSelector:@selector(mailTabViewController:willSelectTabViewItem:)]){
-                [oldTabItem.viewController mailTabViewController:self willSelectTabViewItem:newTabItem];
+                [(NSViewController <PluginPreferencesViewController> *)oldTabItem.viewController mailTabViewController:(MailTabViewController*)self willSelectTabViewItem:newTabItem];
             }
         }
     }
     
     NSWindow * prefWindow = [self.tabView window];
-
+    
     // figure out the mininum width of the window to accommodate all the plugins' tab icons.
     CGFloat toolbarWidth = 0.0f;
     for (NSView * aView in  [[[[prefWindow.toolbar valueForKey:@"_toolbarView"] subviews] firstObject] subviews]){
@@ -109,7 +84,7 @@ The layout work will call out to specific plugins' viewControllers
     
     // call down the swizzle chain
     
-    [swizzledSelf PLUGIN_PREFIXsetSelectedTabViewItemIndex:idx];
+    [self PLUGIN_PREFIXED(setSelectedTabViewItemIndex):idx];
     
     // find and set width constraint on tabView;
     NSLayoutConstraint * widthConstraint = nil;
@@ -130,11 +105,12 @@ The layout work will call out to specific plugins' viewControllers
     
     // let the newly selected plugin know it was just selected
     if ([newTabItem.viewController respondsToSelector:@selector(mailTabViewController:didSelectTabViewItem:)]){
-        [newTabItem.viewController mailTabViewController:self didSelectTabViewItem:newTabItem];
+        [(NSViewController <PluginPreferencesViewController> *) newTabItem.viewController mailTabViewController: (MailTabViewController*)self didSelectTabViewItem:newTabItem];
     }
     
     // we are done here, release the exclusionLock
     [[NSThread currentThread] threadDictionary][@"pluginExclusionLock"] = nil;
 }
+
 
 @end
