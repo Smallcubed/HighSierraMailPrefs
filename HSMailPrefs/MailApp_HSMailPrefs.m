@@ -95,8 +95,8 @@
                     }
                     // send the new controller an initialize from defaults ( if it responds to it.)
                     
-                    if ([controller respondsToSelector:@selector(initializeFromDefaults)]){
-                        [controller initializeFromDefaults];
+                    if ([controller respondsToSelector:@selector(mailPreferencesWillOpen:)]){
+                        [controller mailPreferencesWillOpen:prefController];
                     }
                 }
             }];
@@ -109,8 +109,8 @@
             NSWindowController * currentWindowController = [self preferencesController];
             NSTabViewController *tabViewcontroller = (NSTabViewController *)[currentWindowController contentViewController];
             for(NSTabViewItem *tabViewItem in [tabViewcontroller tabViewItems]) {
-                if ([tabViewItem.viewController respondsToSelector:@selector(saveChanges)]){
-                    [(__kindof NSViewController*)(tabViewItem.viewController) saveChanges];
+                if ([tabViewItem.viewController respondsToSelector:@selector(mailPreferencesWillClose:)]){
+                    [(__kindof NSViewController*)(tabViewItem.viewController) mailPreferencesWillClose:currentWindowController];
                 }
             }
         }

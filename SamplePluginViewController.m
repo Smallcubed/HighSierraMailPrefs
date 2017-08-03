@@ -64,13 +64,15 @@
 
 #pragma mark Delegate methods from -[MailApp setPreferencesController:]
 
-- (void) saveChanges{
+
+- (void) mailPreferencesWillOpen:(NSWindowController*)windowController{
+    [self.preferenceController initializeFromDefaults];
+}
+
+- (void) mailPreferencesWillClose:(NSWindowController*)windowController{
     [self.preferenceController saveChanges];
 }
 
-- (void) initializeFromDefaults{
-    [self.preferenceController initializeFromDefaults];
-}
 
 #pragma mark Delegate methods from -[MailTabViewController setSelectedTabViewItemIndex:]
 
