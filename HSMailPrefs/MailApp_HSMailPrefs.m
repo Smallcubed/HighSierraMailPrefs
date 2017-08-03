@@ -13,7 +13,6 @@
 */
 
 #import "HSMailPrefSwizzle.h"
-#import <objc/runtime.h>
 #import "PluginPreferencesViewController.h"
 
 @interface MailApp :NSApplication
