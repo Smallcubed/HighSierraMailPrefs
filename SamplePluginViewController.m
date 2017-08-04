@@ -99,7 +99,8 @@
         [[NSBundle bundleForClass:[self class]] loadNibNamed:[self nibName] owner:prefController topLevelObjects:nil];
         self.view = [prefController prefView];
         [self viewDidLoad];
-        
+        // the layout code inMailTabViewController uses the preferred content size specified by each preferenceViewController rather than the view.frame.  So we need to capture this size when we load the view.
+         self.preferredContentSize = self.view.frame.size;
     }
     return self;
 }
