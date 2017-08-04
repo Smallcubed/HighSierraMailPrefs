@@ -41,7 +41,6 @@
     if (self.tabView.subviews.count==0  // first call will not have any views loaded -- so don't do layout work.
         || [self isKindOfClass:objc_getClass("MailTabViewController")]==NO  // depending on swizzle technique, we may have swizzled NSTabViewController not MailTabViewController
         || [[NSThread currentThread] threadDictionary][@"pluginExclusionLock"] //some other plugin is doing the layout work
-        || idx == self.selectedTabViewItemIndex // I am not changing tabs here nothing to do.
         ){
         [self PLUGIN_PREFIXED(setSelectedTabViewItemIndex):idx]; // call down the swizzle chain
         return;
@@ -54,7 +53,7 @@
     
     NSTabViewItem * newTabItem = self.tabViewItems[idx];
     
-    if (idx < self.tabViewItems.count){
+    if (((NSUInteger)idx) < self.tabViewItems.count){
         NSUInteger currentIndex = [self selectedTabViewItemIndex];
         if (currentIndex <self.tabViewItems.count){
             NSTabViewItem * oldTabItem = self.tabViewItems[currentIndex];
@@ -74,7 +73,7 @@
     
     
     //  Get the best content size for the view
-    CGFloat viewWidth = NSWidth(newTabItem.viewController.view.frame);
+    CGFloat viewWidth = MAX(newTabItem.viewController.view.fittingSize.width, 550);
     NSSize contentSize = newTabItem.viewController.preferredContentSize;
     if (!CGSizeEqualToSize(contentSize, NSZeroSize)) {
         viewWidth = contentSize.width;
@@ -84,7 +83,6 @@
     CGFloat newViewWidth = MAX(toolbarWidth, viewWidth);
     
     // call down the swizzle chain
-    
     [self PLUGIN_PREFIXED(setSelectedTabViewItemIndex):idx];
     
     // find and set width constraint on tabView;
