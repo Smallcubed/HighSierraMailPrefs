@@ -74,7 +74,7 @@
             
             NSArray <NSString*> * currentInstalledIdentifiers = [items valueForKey:@"identifier"];
             
-            [pluginPrefClasses enumerateObjectsUsingBlock:^(id PrefClass, NSUInteger idx, BOOL * _Nonnull stop) {
+            [pluginPrefClasses enumerateObjectsUsingBlock:^(Class PrefClass, NSUInteger idx, BOOL * _Nonnull stop) {
                 if (![PrefClass respondsToSelector:@selector(preferencesIdentifier)]){
                     return;
                 }
