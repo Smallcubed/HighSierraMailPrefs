@@ -41,6 +41,7 @@
     if (self.tabView.subviews.count==0  // first call will not have any views loaded -- so don't do layout work.
         || [self isKindOfClass:objc_getClass("MailTabViewController")]==NO  // depending on swizzle technique, we may have swizzled NSTabViewController not MailTabViewController
         || [[NSThread currentThread] threadDictionary][@"pluginExclusionLock"] //some other plugin is doing the layout work
+        || (NSUInteger)idx >= self.tabViewItems.count // something selecting an out of bounds tab (or -1?)
         ){
         [self PLUGIN_PREFIXED(setSelectedTabViewItemIndex):idx]; // call down the swizzle chain
         return;
@@ -52,14 +53,12 @@
     // let the currently selected preference know it will soon not be the currently selected preference
     
     NSTabViewItem * newTabItem = self.tabViewItems[idx];
-    
-    if (((NSUInteger)idx) < self.tabViewItems.count){
-        NSUInteger currentIndex = [self selectedTabViewItemIndex];
-        if (currentIndex <self.tabViewItems.count){
-            NSTabViewItem * oldTabItem = self.tabViewItems[currentIndex];
-            if ([oldTabItem.viewController respondsToSelector:@selector(mailTabViewController:willSelectTabViewItem:)]){
-                [(NSViewController <PluginPreferencesViewController> *)oldTabItem.viewController mailTabViewController:(MailTabViewController*)self willSelectTabViewItem:newTabItem];
-            }
+
+    NSInteger currentIndex = [self selectedTabViewItemIndex];
+    if ((NSUInteger)currentIndex < self.tabViewItems.count){
+        NSTabViewItem * oldTabItem = self.tabViewItems[currentIndex];
+        if ([oldTabItem.viewController respondsToSelector:@selector(mailTabViewController:willSelectTabViewItem:)]){
+            [(NSViewController <PluginPreferencesViewController> *)oldTabItem.viewController mailTabViewController:(MailTabViewController*)self willSelectTabViewItem:newTabItem];
         }
     }
     
